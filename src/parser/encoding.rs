@@ -11,9 +11,9 @@ pub trait Encode {
 impl Encode for str {
     fn encode<W: Write>(&self, writer: &mut W) -> io::Result<u32> {
         let len = self.len() as u16;
-        writer.write_u16::<BigEndian>(len).
-            and_then(|_| writer.write_all(self.as_bytes())).
-            map(|_| (2 + len) as u32)
+        writer.write_u16::<BigEndian>(len)?;
+        writer.write_all(self.as_bytes())?;
+        Ok( (2+len) as u32)
     }
 }
 
