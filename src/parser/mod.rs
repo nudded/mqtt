@@ -1,2 +1,2 @@
-mod encoding;
+mod decoding;
 
