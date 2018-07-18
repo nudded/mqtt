@@ -1,14 +1,14 @@
 use std::error::Error;
-use std::fmt::{Display, Formatter};
+use std::fmt;
 
 #[derive(Debug)]
 pub struct DecodingError {
     message: String,
 }
 
-impl Display for DecodingError {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        self.message.fmt(&mut f)
+impl fmt::Display for DecodingError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Decoding failed: {}", self.message)
     }
 }
 
