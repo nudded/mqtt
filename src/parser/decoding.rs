@@ -19,7 +19,7 @@ impl Decode for String {
         let len = reader.read_u16::<BigEndian>().unwrap();
         let mut buf = Vec::with_capacity(len as usize);
 
-        reader.take(len as u64).read_to_end(&mut buf)?;
+        reader.take(u64::from(len)).read_to_end(&mut buf)?;
         String::from_utf8(buf).map_err(|err| err.into())
     }
 }

@@ -13,7 +13,7 @@ impl Encode for str {
         let len = self.len() as u16;
         writer.write_u16::<BigEndian>(len)?;
         writer.write_all(self.as_bytes())?;
-        Ok( (2+len) as u32)
+        Ok(u32::from(2+len))
     }
 }
 
