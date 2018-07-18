@@ -8,6 +8,7 @@ pub enum DecodingError {
     IoError(io::Error),
     Utf8Error(FromUtf8Error),
     MalformedHeaderError,
+    Forbidden,
 }
 
 impl fmt::Display for DecodingError {

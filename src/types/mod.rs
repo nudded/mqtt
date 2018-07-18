@@ -4,25 +4,25 @@ mod publish;
 mod subscribe;
 mod suback;
 mod unsubscribe;
-use self::connect::*;
-use self::connack::*;
-use self::publish::*;
-use self::subscribe::*;
-use self::suback::*;
-use self::unsubscribe::*;
+pub use self::connect::*;
+pub use self::connack::*;
+pub use self::publish::*;
+pub use self::subscribe::*;
+pub use self::suback::*;
+pub use self::unsubscribe::*;
 
 #[derive(Debug)]
-pub struct PacketIdentifier(u16);
+pub struct PacketIdentifier(pub u16);
 
 #[derive(Debug)]
-enum Qos {
+pub enum Qos {
     AtMostOnce,
     AtLeastOnce,
     ExactlyOnce
 }
 
 #[derive(Debug)]
-enum ReturnCode {
+pub enum ReturnCode {
     Success(Qos),
     Failure,
 }
