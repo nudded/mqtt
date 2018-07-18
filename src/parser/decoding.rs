@@ -1,6 +1,6 @@
+use super::types::DecodingError;
 use std::io::Read;
 use std::error::Error;
-use std::string::FromUtf8Error;
 
 use byteorder::{ReadBytesExt, BigEndian};
 
@@ -13,13 +13,14 @@ pub trait Decode: Sized {
 
 impl Decode for String {
     type DecoderState=();
-    type DecodingError=FromUtf8Error;
+    type DecodingError=DecodingError;
 
-    fn decode<R: Read>(reader: &mut R, _: &mut Self::DecoderState) -> Result<Self, FromUtf8Error> {
+    fn decode<R: Read>(reader: &mut R, _: &mut Self::DecoderState) -> Result<Self, DecodingError> {
         let len = reader.read_u16::<BigEndian>().unwrap();
         let mut buf = Vec::with_capacity(len as usize);
-        reader.take(len as u64).read_to_end(&mut buf).expect("Could not read expected amount of bytes");
-        String::from_utf8(buf)
+
+        reader.take(len as u64).read_to_end(&mut buf)?;
+        String::from_utf8(buf).map_err(|err| err.into())
     }
 }
 
