@@ -1,6 +1,6 @@
 mod decoding;
-mod types;
-use self::decoding::Decode;
+pub mod types;
+pub use self::decoding::Decode;
 use self::types::*;
 use super::types::*;
 
@@ -15,7 +15,7 @@ fn decode_remaining_length<R: Read>(reader: &mut R) -> Result<u32, DecodingError
         value += u32::from(next_byte & 127) * multiplier;
         multiplier *= 128;
         if multiplier > 128 * 128 * 128 {
-            return Err(DecodingError::MalformedHeaderError);
+            return Err(DecodingError::Malformed);
         }
         next_byte = reader.read_u8()?;
     }
@@ -51,22 +51,28 @@ impl Decode for PacketIdentifier {
 
 impl Packet {
     fn decode_connect<R: Read>(reader: &mut R, state: &mut DecodingInfo) -> Result<Self, DecodingError> {
-        Ok(Packet::Disconnect)
+        let data = ConnectData::decode(reader, state)?;
+        Ok(Packet::Connect(data))
     }
     fn decode_connack<R: Read>(reader: &mut R, state: &mut DecodingInfo) -> Result<Self, DecodingError> {
-        Ok(Packet::Disconnect)
+        let data = ConnackData::decode(reader, state)?;
+        Ok(Packet::Connack(data))
     }
     fn decode_publish<R: Read>(reader: &mut R, state: &mut DecodingInfo) -> Result<Self, DecodingError> {
-        Ok(Packet::Disconnect)
+        let data = PublishData::decode(reader, state)?;
+        Ok(Packet::Publish(data))
     }
     fn decode_subscribe<R: Read>(reader: &mut R, state: &mut DecodingInfo) -> Result<Self, DecodingError> {
-        Ok(Packet::Disconnect)
+        let data = SubscribeData::decode(reader, state)?;
+        Ok(Packet::Subscribe(data))
     }
     fn decode_suback<R: Read>(reader: &mut R, state: &mut DecodingInfo) -> Result<Self, DecodingError> {
-        Ok(Packet::Disconnect)
+        let data = SubackData::decode(reader, state)?;
+        Ok(Packet::Suback(data))
     }
     fn decode_unsubscribe<R: Read>(reader: &mut R, state: &mut DecodingInfo) -> Result<Self, DecodingError> {
-        Ok(Packet::Disconnect)
+        let data = UnsubscribeData::decode(reader, state)?;
+        Ok(Packet::Unsubscribe(data))
     }
 }
 

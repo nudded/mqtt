@@ -16,7 +16,7 @@ impl Decode for String {
     type DecodingError=DecodingError;
 
     fn decode<R: Read>(reader: &mut R, _: &mut Self::DecoderState) -> Result<Self, DecodingError> {
-        let len = reader.read_u16::<BigEndian>().unwrap();
+        let len = reader.read_u16::<BigEndian>().unwrap_or(0);
         let mut buf = Vec::with_capacity(len as usize);
 
         reader.take(u64::from(len)).read_to_end(&mut buf)?;
