@@ -7,11 +7,11 @@ use byteorder::ReadBytesExt;
 #[derive(Debug)]
 pub struct ConnackData {
     session_present: bool,
-    return_code: ReturnCode
+    return_code: ConnackReturnCode
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub enum ReturnCode {
+pub enum ConnackReturnCode {
     Accepted,
     UnacceptableProtocolVersion,
     IdentifierRejected,
@@ -20,18 +20,18 @@ pub enum ReturnCode {
     NotAuthorized,
 }
 
-impl Decode for ReturnCode {
+impl Decode for ConnackReturnCode {
     type DecoderState=();
     type DecodingError=DecodingError;
 
     fn decode<R: Read>(reader: &mut R, _: &mut Self::DecoderState) -> Result<Self, DecodingError> {
         match reader.read_u8()? {
-            0 => Ok(ReturnCode::Accepted),
-            1 => Ok(ReturnCode::UnacceptableProtocolVersion),
-            2 => Ok(ReturnCode::IdentifierRejected),
-            3 => Ok(ReturnCode::ServerUnavailable),
-            4 => Ok(ReturnCode::BadUsernameOrPassword),
-            5 => Ok(ReturnCode::NotAuthorized),
+            0 => Ok(ConnackReturnCode::Accepted),
+            1 => Ok(ConnackReturnCode::UnacceptableProtocolVersion),
+            2 => Ok(ConnackReturnCode::IdentifierRejected),
+            3 => Ok(ConnackReturnCode::ServerUnavailable),
+            4 => Ok(ConnackReturnCode::BadUsernameOrPassword),
+            5 => Ok(ConnackReturnCode::NotAuthorized),
             _ => Err(DecodingError::Malformed),
         }
     }
@@ -49,7 +49,7 @@ impl Decode for ConnackData {
         if first_byte > 1 { return Err(DecodingError::Malformed) };
 
         let session_present = first_byte == 1;
-        let return_code = ReturnCode::decode(reader, &mut ())?;
+        let return_code = ConnackReturnCode::decode(reader, &mut ())?;
         Ok(ConnackData { session_present, return_code })
     }
 }
@@ -63,34 +63,34 @@ mod tests {
     #[test]
     fn decoding_return_codes() {
         let mut cursor = Cursor::new(vec![0]);
-        let mut return_code = ReturnCode::decode(&mut cursor, &mut ()).unwrap();
-        assert_eq!(return_code, ReturnCode::Accepted);
+        let mut return_code = ConnackReturnCode::decode(&mut cursor, &mut ()).unwrap();
+        assert_eq!(return_code, ConnackReturnCode::Accepted);
 
         cursor = Cursor::new(vec![1]);
-        return_code = ReturnCode::decode(&mut cursor, &mut ()).unwrap();
-        assert_eq!(return_code, ReturnCode::UnacceptableProtocolVersion);
+        return_code = ConnackReturnCode::decode(&mut cursor, &mut ()).unwrap();
+        assert_eq!(return_code, ConnackReturnCode::UnacceptableProtocolVersion);
 
         cursor = Cursor::new(vec![2]);
-        return_code = ReturnCode::decode(&mut cursor, &mut ()).unwrap();
-        assert_eq!(return_code, ReturnCode::IdentifierRejected);
+        return_code = ConnackReturnCode::decode(&mut cursor, &mut ()).unwrap();
+        assert_eq!(return_code, ConnackReturnCode::IdentifierRejected);
 
         cursor = Cursor::new(vec![3]);
-        return_code = ReturnCode::decode(&mut cursor, &mut ()).unwrap();
-        assert_eq!(return_code, ReturnCode::ServerUnavailable);
+        return_code = ConnackReturnCode::decode(&mut cursor, &mut ()).unwrap();
+        assert_eq!(return_code, ConnackReturnCode::ServerUnavailable);
 
         cursor = Cursor::new(vec![4]);
-        return_code = ReturnCode::decode(&mut cursor, &mut ()).unwrap();
-        assert_eq!(return_code, ReturnCode::BadUsernameOrPassword);
+        return_code = ConnackReturnCode::decode(&mut cursor, &mut ()).unwrap();
+        assert_eq!(return_code, ConnackReturnCode::BadUsernameOrPassword);
 
         cursor = Cursor::new(vec![5]);
-        return_code = ReturnCode::decode(&mut cursor, &mut ()).unwrap();
-        assert_eq!(return_code, ReturnCode::NotAuthorized);
+        return_code = ConnackReturnCode::decode(&mut cursor, &mut ()).unwrap();
+        assert_eq!(return_code, ConnackReturnCode::NotAuthorized);
     }
 
     #[test]
     fn decoding_error_while_decoding_return_codes() {
         let mut cursor = Cursor::new(vec![]);
-        let result = ReturnCode::decode(&mut cursor, &mut ());
+        let result = ConnackReturnCode::decode(&mut cursor, &mut ());
         assert_eq!(result.is_err(), true);
     }
 
@@ -101,7 +101,7 @@ mod tests {
         let mut cursor = Cursor::new(vec![1,0]);
         let connack_data = ConnackData::decode(&mut cursor, &mut state).unwrap();
         assert_eq!(connack_data.session_present, true);
-        assert_eq!(connack_data.return_code, ReturnCode::Accepted);
+        assert_eq!(connack_data.return_code, ConnackReturnCode::Accepted);
     }
 
     #[test]
@@ -111,7 +111,7 @@ mod tests {
         let mut cursor = Cursor::new(vec![0,2]);
         let connack_data = ConnackData::decode(&mut cursor, &mut state).unwrap();
         assert_eq!(connack_data.session_present, false);
-        assert_eq!(connack_data.return_code, ReturnCode::IdentifierRejected);
+        assert_eq!(connack_data.return_code, ConnackReturnCode::IdentifierRejected);
     }
 
     #[test]
@@ -121,7 +121,7 @@ mod tests {
         let mut cursor = Cursor::new(vec![1,5]);
         let connack_data = ConnackData::decode(&mut cursor, &mut state).unwrap();
         assert_eq!(connack_data.session_present, true);
-        assert_eq!(connack_data.return_code, ReturnCode::NotAuthorized);
+        assert_eq!(connack_data.return_code, ConnackReturnCode::NotAuthorized);
     }
 
     #[test]

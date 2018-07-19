@@ -21,7 +21,7 @@ impl Decode for SubackData {
         let mut return_codes = Vec::with_capacity(remaining_bytes as usize);
 
         while remaining_bytes > 0 {
-            return_codes.push(ReturnCode::decode(reader, state)?);
+            return_codes.push(ReturnCode::decode(reader, &mut ())?);
             remaining_bytes -= 1;
         }
 

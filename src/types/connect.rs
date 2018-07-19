@@ -72,7 +72,7 @@ impl Decode for ConnectData {
         let will_retain = connect_flags & 0b0010_0000 > 0;
 
         // this is a sort-of decode method that does not actually decode like this method does
-        let will_qos = Qos::decode(connect_flags & 0b0001_1000 >> 3).ok_or(DecodingError::Malformed)?;
+        let will_qos = Qos::decode((connect_flags & 0b0001_1000) >> 3).ok_or(DecodingError::Malformed)?;
 
         Ok(ConnectData {
             protocol_level,
@@ -85,5 +85,149 @@ impl Decode for ConnectData {
             will_qos,
             user_name,
             password})
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Cursor;
+
+    #[test]
+    fn decoding_connect_data_1() {
+        let header = Header { packet_type: 1, flags: 0, remaining_length: 47};
+        let mut state = DecodingInfo {header};
+
+        let mut sample_data: Vec<u8> = vec![0,4];
+        sample_data.extend_from_slice("MQTT".as_bytes());
+        // protocol level
+        sample_data.push(4);
+        // connect flags
+        sample_data.push(0b1111_0110);
+
+        // keepalive
+        sample_data.push(1);
+        sample_data.push(0);
+
+        // payload
+        // client identifier
+        sample_data.push(0);
+        sample_data.push(4);
+        sample_data.extend_from_slice("TOON".as_bytes());
+
+        // will topic
+        sample_data.push(0);
+        sample_data.push(4);
+        sample_data.extend_from_slice("FEBE".as_bytes());
+
+        // will message
+        sample_data.push(0);
+        sample_data.push(7);
+        sample_data.extend_from_slice("testing".as_bytes());
+
+        // username
+        sample_data.push(0);
+        sample_data.push(6);
+        sample_data.extend_from_slice("nudded".as_bytes());
+
+        // password
+        sample_data.push(0);
+        sample_data.push(6);
+        sample_data.extend_from_slice("nudded".as_bytes());
+
+        let mut cursor = Cursor::new(sample_data);
+        let connect_data = ConnectData::decode(&mut cursor, &mut state).unwrap();
+        assert_eq!(connect_data.protocol_level, 4);
+        assert_eq!(connect_data.keepalive, 0b0000_0001_0000_0000);
+        assert_eq!(connect_data.client_identifier, String::from("TOON"));
+        assert_eq!(connect_data.clean_session, true);
+        assert_eq!(connect_data.will_topic, Some(String::from("FEBE")));
+        assert_eq!(connect_data.will_message, Some(String::from("testing")));
+        assert_eq!(connect_data.will_retain, true);
+        assert_eq!(connect_data.will_qos, Qos::ExactlyOnce);
+        assert_eq!(connect_data.user_name, Some(String::from("nudded")));
+        assert_eq!(connect_data.password, Some(String::from("nudded")));
+    }
+
+    #[test]
+    fn decoding_connect_data_2() {
+        let header = Header { packet_type: 1, flags: 0, remaining_length: 47};
+        let mut state = DecodingInfo {header};
+
+        let mut sample_data: Vec<u8> = vec![0,4];
+        sample_data.extend_from_slice("MQTT".as_bytes());
+        // protocol level
+        sample_data.push(4);
+        // connect flags
+        sample_data.push(0b0000_1000);
+
+        // keepalive
+        sample_data.push(1);
+        sample_data.push(0);
+
+        // payload
+        // client identifier
+        sample_data.push(0);
+        sample_data.push(4);
+        sample_data.extend_from_slice("TOON".as_bytes());
+
+        let mut cursor = Cursor::new(sample_data);
+        let connect_data = ConnectData::decode(&mut cursor, &mut state).unwrap();
+        assert_eq!(connect_data.protocol_level, 4);
+        assert_eq!(connect_data.keepalive, 0b0000_0001_0000_0000);
+        assert_eq!(connect_data.client_identifier, String::from("TOON"));
+        assert_eq!(connect_data.clean_session, false);
+        assert_eq!(connect_data.will_topic, None);
+        assert_eq!(connect_data.will_message, None);
+        assert_eq!(connect_data.will_retain, false);
+        assert_eq!(connect_data.will_qos, Qos::AtLeastOnce);
+        assert_eq!(connect_data.user_name, None);
+        assert_eq!(connect_data.password, None);
+    }
+
+    #[test]
+    fn decoding_connect_data_3() {
+        let header = Header { packet_type: 1, flags: 0, remaining_length: 47};
+        let mut state = DecodingInfo {header};
+
+        let mut sample_data: Vec<u8> = vec![0,4];
+        sample_data.extend_from_slice("MQTT".as_bytes());
+        // protocol level
+        sample_data.push(4);
+        // connect flags
+        sample_data.push(0b1100_0000);
+
+        // keepalive
+        sample_data.push(1);
+        sample_data.push(0);
+
+        // payload
+        // client identifier
+        sample_data.push(0);
+        sample_data.push(4);
+        sample_data.extend_from_slice("TOON".as_bytes());
+
+        // username
+        sample_data.push(0);
+        sample_data.push(6);
+        sample_data.extend_from_slice("nudded".as_bytes());
+
+        // password
+        sample_data.push(0);
+        sample_data.push(6);
+        sample_data.extend_from_slice("nudded".as_bytes());
+
+        let mut cursor = Cursor::new(sample_data);
+        let connect_data = ConnectData::decode(&mut cursor, &mut state).unwrap();
+        assert_eq!(connect_data.protocol_level, 4);
+        assert_eq!(connect_data.keepalive, 0b0000_0001_0000_0000);
+        assert_eq!(connect_data.client_identifier, String::from("TOON"));
+        assert_eq!(connect_data.clean_session, false);
+        assert_eq!(connect_data.will_topic, None);
+        assert_eq!(connect_data.will_message, None);
+        assert_eq!(connect_data.will_retain, false);
+        assert_eq!(connect_data.will_qos, Qos::AtMostOnce);
+        assert_eq!(connect_data.user_name, Some(String::from("nudded")));
+        assert_eq!(connect_data.password, Some(String::from("nudded")));
     }
 }

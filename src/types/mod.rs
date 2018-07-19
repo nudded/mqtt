@@ -27,37 +27,11 @@ pub enum Qos {
     ExactlyOnce
 }
 
-impl Qos {
-    fn decode(bits: u8) -> Option<Qos> {
-        match bits {
-            0 => Some(Qos::AtMostOnce),
-            1 => Some(Qos::AtMostOnce),
-            2 => Some(Qos::ExactlyOnce),
-            _ => None,
-        }
-    }
-}
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum ReturnCode {
     Success(Qos),
     Failure,
-}
-
-impl Decode for ReturnCode {
-    type DecoderState=DecodingInfo;
-    type DecodingError=DecodingError;
-
-    fn decode<R: Read>(reader: &mut R, _state: &mut Self::DecoderState) -> Result<Self, DecodingError> {
-        let byte = reader.read_u8()?;
-        match byte {
-            0x00 => Ok(ReturnCode::Success(Qos::AtMostOnce)),
-            0x01 => Ok(ReturnCode::Success(Qos::AtLeastOnce)),
-            0x02 => Ok(ReturnCode::Success(Qos::ExactlyOnce)),
-            0x80 => Ok(ReturnCode::Failure),
-            _ => Err(DecodingError::Malformed),
-        }
-    }
 }
 
 #[derive(Debug)]
@@ -76,4 +50,63 @@ pub enum Packet {
     Pingreq,
     Pingresp,
     Disconnect,
+}
+
+impl Qos {
+    fn decode(bits: u8) -> Option<Qos> {
+        match bits {
+            0 => Some(Qos::AtMostOnce),
+            1 => Some(Qos::AtLeastOnce),
+            2 => Some(Qos::ExactlyOnce),
+            _ => None,
+        }
+    }
+}
+
+impl Decode for ReturnCode {
+    type DecoderState=();
+    type DecodingError=DecodingError;
+
+    fn decode<R: Read>(reader: &mut R, _state: &mut Self::DecoderState) -> Result<Self, DecodingError> {
+        let byte = reader.read_u8()?;
+        match byte {
+            0x00 => Ok(ReturnCode::Success(Qos::AtMostOnce)),
+            0x01 => Ok(ReturnCode::Success(Qos::AtLeastOnce)),
+            0x02 => Ok(ReturnCode::Success(Qos::ExactlyOnce)),
+            0x80 => Ok(ReturnCode::Failure),
+            _ => Err(DecodingError::Malformed),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Cursor;
+
+    #[test]
+    fn decoding_qos() {
+        assert_eq!(Qos::decode(0), Some(Qos::AtMostOnce));
+        assert_eq!(Qos::decode(1), Some(Qos::AtLeastOnce));
+        assert_eq!(Qos::decode(2), Some(Qos::ExactlyOnce));
+        assert_eq!(Qos::decode(80), None);
+    }
+
+    #[test]
+    fn decoding_return_codes() {
+        let mut data = Cursor::new(vec![0]);
+        assert_eq!(ReturnCode::decode(&mut data, &mut ()).unwrap(), ReturnCode::Success(Qos::AtMostOnce));
+
+        data = Cursor::new(vec![1]);
+        assert_eq!(ReturnCode::decode(&mut data, &mut ()).unwrap(), ReturnCode::Success(Qos::AtLeastOnce));
+
+        data = Cursor::new(vec![2]);
+        assert_eq!(ReturnCode::decode(&mut data, &mut ()).unwrap(), ReturnCode::Success(Qos::ExactlyOnce));
+
+        data = Cursor::new(vec![0x80]);
+        assert_eq!(ReturnCode::decode(&mut data, &mut ()).unwrap(), ReturnCode::Failure);
+
+        data = Cursor::new(vec![10]);
+        assert_eq!(ReturnCode::decode(&mut data, &mut ()).is_err(), true);
+    }
 }
