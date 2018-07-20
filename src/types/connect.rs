@@ -1,8 +1,6 @@
-use super::super::parser::Decode;
-use super::super::parser::types::*;
-use super::Qos;
 use std::io::Read;
 use byteorder::{ReadBytesExt, BigEndian};
+use super::*;
 
 
 #[derive(Debug)]

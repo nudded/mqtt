@@ -45,6 +45,7 @@ mod tests {
         let mut data: Vec<u8> = Vec::new();
         test_string.encode(&mut data).unwrap();
         assert_eq!(vec![0,0], data);
+        assert_eq!(test_string.encoded_length(), 2);
     }
 
     #[test]
@@ -57,5 +58,6 @@ mod tests {
         expected.push(7);
         expected.extend_from_slice("testing".as_bytes());
         assert_eq!(expected, data);
+        assert_eq!(test_string.encoded_length(), 9);
     }
 }
