@@ -4,23 +4,33 @@ use std::io;
 use byteorder::{WriteBytesExt, BigEndian};
 
 pub trait Encode {
+    /// used to calculate the remaining_length in the header field
+    fn encoded_length(&self) -> u32 {0}
+
     /// should return the amount of bytes written, or an Error of type Err
-    fn encode<W: Write>(&self, &mut W) -> io::Result<u32>;
+    fn encode<W: Write>(&self, &mut W) -> io::Result<()>;
 }
 
 impl Encode for str {
-    fn encode<W: Write>(&self, writer: &mut W) -> io::Result<u32> {
+    fn encoded_length(&self) -> u32 {
+        self.len() as u32 + 2
+    }
+
+    fn encode<W: Write>(&self, writer: &mut W) -> io::Result<()> {
         let len = self.len() as u16;
         writer.write_u16::<BigEndian>(len)?;
         writer.write_all(self.as_bytes())?;
-        Ok(u32::from(2+len))
+        Ok(())
     }
 }
 
 impl<T> Encode for T
     where T: AsRef<str> {
+    fn encoded_length(&self) -> u32 {
+        self.as_ref().encoded_length()
+    }
 
-    fn encode<W: Write>(&self, writer: &mut W) -> io::Result<u32> {
+    fn encode<W: Write>(&self, writer: &mut W) -> io::Result<()> {
         self.as_ref().encode(writer)
     }
 }
@@ -33,8 +43,7 @@ mod tests {
     fn it_encodes_empty_string_values() {
         let test_string = "";
         let mut data: Vec<u8> = Vec::new();
-        let len = test_string.encode(&mut data).unwrap();
-        assert_eq!(2, len);
+        test_string.encode(&mut data).unwrap();
         assert_eq!(vec![0,0], data);
     }
 
@@ -42,8 +51,7 @@ mod tests {
     fn it_encodes_string_objects() {
         let test_string = String::from("testing");
         let mut data: Vec<u8> = Vec::new();
-        let len = test_string.encode(&mut data).unwrap();
-        assert_eq!(9, len);
+        test_string.encode(&mut data).unwrap();
         let mut expected: Vec<u8> = Vec::new();
         expected.push(0);
         expected.push(7);

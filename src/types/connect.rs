@@ -92,6 +92,7 @@ impl Decode for ConnectData {
 mod tests {
     use super::*;
     use std::io::Cursor;
+    use types::Header;
 
     #[test]
     fn decoding_connect_data_1() {

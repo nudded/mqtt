@@ -27,6 +27,12 @@ pub enum Qos {
     ExactlyOnce
 }
 
+#[derive(Debug, Copy, Clone)]
+pub struct Header {
+    pub packet_type: u8,
+    pub flags: u8,
+    pub remaining_length: u32,
+}
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ReturnCode {

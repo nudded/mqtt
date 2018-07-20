@@ -59,6 +59,7 @@ impl Decode for ConnackData {
 mod tests {
     use super::*;
     use std::io::Cursor;
+    use types::Header;
 
     #[test]
     fn decoding_return_codes() {
