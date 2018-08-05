@@ -7,7 +7,7 @@ pub trait Encode {
     /// used to calculate the remaining_length in the header field
     fn encoded_length(&self) -> u32 {0}
 
-    /// should return the amount of bytes written, or an Error of type Err
+    /// encode the mqtt data onto the writer
     fn encode<W: Write>(&self, &mut W) -> io::Result<()>;
 }
 

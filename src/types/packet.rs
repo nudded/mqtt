@@ -211,6 +211,15 @@ impl Decode for Packet {
     }
 }
 
+impl Encode for Packet {
+    fn encode<W: Write>(&self, writer: &mut W) -> io::Result<()> {
+        match self {
+
+            _ => Ok(())
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

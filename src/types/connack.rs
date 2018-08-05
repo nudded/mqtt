@@ -1,7 +1,8 @@
 use super::*;
 
-use std::io::Read;
-use byteorder::ReadBytesExt;
+use std::io;
+use std::io::{Read, Write};
+use byteorder::{ReadBytesExt, WriteBytesExt};
 
 #[derive(Debug)]
 pub struct ConnackData {
@@ -36,6 +37,23 @@ impl Decode for ConnackReturnCode {
     }
 }
 
+impl Encode for ConnackReturnCode {
+    fn encoded_length(&self) -> u32 { 1 }
+
+    fn encode<W: Write>(&self, writer: &mut W) -> io::Result<()> {
+        writer.write_u8(
+            match self {
+                ConnackReturnCode::Accepted => 0,
+                ConnackReturnCode::UnacceptableProtocolVersion => 1,
+                ConnackReturnCode::IdentifierRejected => 2,
+                ConnackReturnCode::ServerUnavailable => 3,
+                ConnackReturnCode::BadUsernameOrPassword => 4,
+                ConnackReturnCode::NotAuthorized => 5,
+            }
+        )
+    }
+}
+
 impl Decode for ConnackData {
     type DecoderState=DecodingInfo;
     type DecodingError=DecodingError;
@@ -50,6 +68,20 @@ impl Decode for ConnackData {
         let session_present = first_byte == 1;
         let return_code = ConnackReturnCode::decode(reader, &mut ())?;
         Ok(ConnackData { session_present, return_code })
+    }
+}
+
+impl Encode for ConnackData {
+    fn encoded_length(&self) -> u32 { 2 }
+
+    fn encode<W: Write>(&self, writer: &mut W) -> io::Result<()> {
+        if self.session_present {
+            writer.write_u8(1)?
+        } else {
+            writer.write_u8(0)?
+        }
+
+        self.return_code.encode(writer)
     }
 }
 
