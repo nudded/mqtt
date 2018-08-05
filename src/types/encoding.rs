@@ -11,6 +11,7 @@ pub trait Encode {
     fn encode<W: Write>(&self, &mut W) -> io::Result<()>;
 }
 
+
 impl Encode for str {
     fn encoded_length(&self) -> u32 {
         self.len() as u32 + 2
@@ -24,14 +25,46 @@ impl Encode for str {
     }
 }
 
-impl<T> Encode for T
-    where T: AsRef<str> {
+impl Encode for String {
     fn encoded_length(&self) -> u32 {
-        self.as_ref().encoded_length()
+        (&self).encoded_length()
     }
 
     fn encode<W: Write>(&self, writer: &mut W) -> io::Result<()> {
-        self.as_ref().encode(writer)
+        (&self).encode(writer)
+    }
+}
+
+impl Encode for u8 {
+    fn encoded_length(&self) -> u32 {1}
+
+    fn encode<W: Write>(&self, writer: &mut W) -> io::Result<()> {
+        writer.write_u8(*self)
+    }
+}
+
+impl Encode for u16 {
+    fn encoded_length(&self) -> u32 {2}
+
+    fn encode<W: Write>(&self, writer: &mut W) -> io::Result<()> {
+        writer.write_u16::<BigEndian>(*self)
+    }
+}
+
+impl<T> Encode for Option<T>
+    where T: Encode {
+    fn encoded_length(&self) -> u32 {
+        match self {
+            None => 0,
+            Some(t) => t.encoded_length()
+        }
+    }
+
+    fn encode<W: Write>(&self, writer: &mut W) -> io::Result<()> {
+        match self {
+            None => Ok(()),
+            Some(t) => t.encode(writer)
+        }
     }
 }
 

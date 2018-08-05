@@ -1,5 +1,6 @@
-use std::io::Read;
-use byteorder::{ReadBytesExt, BigEndian};
+use std::io;
+use std::io::{Read, Write};
+use byteorder::{ReadBytesExt, WriteBytesExt, BigEndian};
 use super::*;
 
 
@@ -83,6 +84,43 @@ impl Decode for ConnectData {
             will_qos,
             user_name,
             password})
+    }
+}
+
+impl Encode for ConnectData {
+    fn encoded_length(&self) -> u32 {
+        "MQTT".encoded_length() +
+        self.protocol_level.encoded_length() +
+        1 + // flags
+        self.keepalive.encoded_length() +
+        // payload
+        self.client_identifier.encoded_length() +
+        self.will_topic.encoded_length() +
+        self.will_message.encoded_length() +
+        self.user_name.encoded_length() +
+        self.password.encoded_length()
+    }
+
+    fn encode<W: Write>(&self, writer: &mut W) -> io::Result<()> {
+        "MQTT".encode(writer)?;
+        self.protocol_level.encode(writer)?;
+
+        let mut flags = 0u8;
+        if self.user_name.is_some() {flags &= 0b1000_0000}
+        if self.password.is_some() {flags &= 0b0100_0000}
+        if self.will_retain {flags &= 0b0010_0000}
+        if self.will_retain {flags &= 0b0010_0000}
+        flags &= self.will_qos.encode() << 3;
+        if self.will_topic.is_some() {flags &= 0b0000_0100}
+        if self.clean_session {flags &= 0b0000_0010}
+        flags.encode(writer)?;
+
+        self.keepalive.encode(writer)?;
+        self.client_identifier.encode(writer)?;
+        self.will_topic.encode(writer)?;
+        self.will_message.encode(writer)?;
+        self.user_name.encode(writer)?;
+        self.password.encode(writer)
     }
 }
 
