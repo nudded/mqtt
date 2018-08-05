@@ -1,5 +1,6 @@
 use super::*;
-use std::io::Read;
+use std::io;
+use std::io::{Read, Write};
 
 #[derive(Debug)]
 pub struct SubackData {
@@ -25,4 +26,18 @@ impl Decode for SubackData {
 
         Ok(SubackData { packet_identifier, return_codes })
     }
+}
+
+impl Encode for SubackData {
+
+    fn encoded_length(&self) -> u32 {
+        self.packet_identifier.encoded_length() +
+        self.return_codes.encoded_length()
+    }
+
+    fn encode<W: Write>(&self, writer: &mut W) -> io::Result<()> {
+        self.packet_identifier.encode(writer)?;
+        self.return_codes.encode(writer)
+    }
+
 }

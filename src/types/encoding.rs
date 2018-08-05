@@ -27,11 +27,14 @@ impl Encode for str {
 
 impl Encode for String {
     fn encoded_length(&self) -> u32 {
-        (&self).encoded_length()
+        self.len() as u32 + 2
     }
 
     fn encode<W: Write>(&self, writer: &mut W) -> io::Result<()> {
-        (&self).encode(writer)
+        let len = self.len() as u16;
+        writer.write_u16::<BigEndian>(len)?;
+        writer.write_all(self.as_bytes())?;
+        Ok(())
     }
 }
 
@@ -65,6 +68,20 @@ impl<T> Encode for Option<T>
             None => Ok(()),
             Some(t) => t.encode(writer)
         }
+    }
+}
+
+impl<T> Encode for Vec<T>
+    where T: Encode {
+    fn encoded_length(&self) -> u32 {
+        self.iter().map(|t| t.encoded_length()).sum()
+    }
+
+    fn encode<W: Write>(&self, writer: &mut W) -> io::Result<()> {
+        for e in self {
+            e.encode(writer)?;
+        }
+        Ok(())
     }
 }
 

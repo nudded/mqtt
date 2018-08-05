@@ -1,5 +1,6 @@
 use super::*;
-use std::io::Read;
+use std::io;
+use std::io::{Write, Read};
 
 #[derive(Debug)]
 pub struct PublishData {
@@ -30,4 +31,20 @@ impl Decode for PublishData {
         let message = String::decode(reader, &mut ())?;
         Ok(PublishData { qos, retain, dup, packet_identifier, topic_name, message})
     }
+}
+
+impl Encode for PublishData {
+
+    fn encoded_length(&self) -> u32 {
+        self.topic_name.encoded_length() +
+        self.packet_identifier.encoded_length() +
+        self.message.encoded_length()
+    }
+
+    fn encode<W: Write>(&self, writer: &mut W) -> io::Result<()> {
+        self.topic_name.encode(writer)?;
+        self.packet_identifier.encode(writer)?;
+        self.message.encode(writer)
+    }
+
 }

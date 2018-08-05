@@ -1,19 +1,13 @@
 use super::*;
-use std::io::Read;
-use byteorder::ReadBytesExt;
+use std::io;
+use std::io::{Read, Write};
+use byteorder::{ReadBytesExt, WriteBytesExt};
 
 #[derive(Debug)]
 pub struct TopicFilter {
     filter: String,
     qos: Qos
 }
-
-impl TopicFilter {
-    fn len(&self) -> usize {
-        self.filter.bytes().len() + 2 + 1
-    }
-}
-
 
 impl Decode for TopicFilter {
     type DecoderState=DecodingInfo;
@@ -27,6 +21,17 @@ impl Decode for TopicFilter {
         let qos = Qos::decode(qos_byte).ok_or(DecodingError::Malformed)?;
 
         Ok(TopicFilter {filter, qos})
+    }
+}
+
+impl Encode for TopicFilter {
+    fn encoded_length(&self) -> u32 {
+        self.filter.encoded_length() + 1
+    }
+
+    fn encode<W: Write>(&self, writer: &mut W) -> io::Result<()> {
+        self.filter.encode(writer)?;
+        writer.write_u8(self.qos.encode())
     }
 }
 
@@ -49,10 +54,22 @@ impl Decode for SubscribeData {
         let mut remaining_length = state.header.remaining_length - 2;
         while remaining_length > 0 {
             let filter = TopicFilter::decode(reader, state)?;
-            remaining_length -= filter.len() as u32;
+            remaining_length -= filter.encoded_length();
             topic_filters.push(filter)
         }
 
         Ok(SubscribeData { packet_identifier, topic_filters})
+    }
+}
+
+impl Encode for SubscribeData {
+    fn encoded_length(&self) -> u32 {
+        self.packet_identifier.encoded_length() +
+        self.topic_filters.encoded_length()
+    }
+
+    fn encode<W: Write>(&self, writer: &mut W) -> io::Result<()> {
+        self.packet_identifier.encode(writer)?;
+        self.topic_filters.encode(writer)
     }
 }

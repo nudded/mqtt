@@ -1,5 +1,6 @@
 use super::*;
-use std::io::Read;
+use std::io;
+use std::io::{Write, Read};
 
 #[derive(Debug)]
 pub struct UnsubscribeData {
@@ -25,5 +26,17 @@ impl Decode for UnsubscribeData {
         }
 
         Ok(UnsubscribeData {packet_identifier, topic_filters})
+    }
+}
+
+impl Encode for UnsubscribeData {
+    fn encoded_length(&self) -> u32 {
+        self.packet_identifier.encoded_length() +
+        self.topic_filters.encoded_length()
+    }
+
+    fn encode<W: Write>(&self, writer: &mut W) -> io::Result<()> {
+        self.packet_identifier.encode(writer)?;
+        self.topic_filters.encode(writer)
     }
 }
