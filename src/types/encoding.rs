@@ -11,7 +11,6 @@ pub trait Encode {
     fn encode<W: Write>(&self, &mut W) -> io::Result<()>;
 }
 
-
 impl Encode for str {
     fn encoded_length(&self) -> u32 {
         self.len() as u32 + 2

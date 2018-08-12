@@ -111,6 +111,27 @@ impl Encode for Header {
     }
 }
 
+impl Header {
+    fn for_packet(packet: &Packet) -> Header {
+        match packet {
+            Packet::Connect(data) => Header {flags: 0, remaining_length: data.encoded_length(), packet_type: 1},
+            Packet::Connack(data) => Header {flags: 0, remaining_length: data.encoded_length(), packet_type: 2},
+            Packet::Publish(data) => Header {flags: data.flags(), remaining_length: data.encoded_length(), packet_type: 3},
+            Packet::Puback(data) => Header {flags: 0, remaining_length: data.encoded_length(), packet_type: 4},
+            Packet::Pubrec(data) => Header {flags: 0, remaining_length: data.encoded_length(), packet_type: 5},
+            Packet::Pubrel(data) => Header {flags: 2, remaining_length: data.encoded_length(), packet_type: 6},
+            Packet::Pubcomp(data) => Header {flags: 0, remaining_length: data.encoded_length(), packet_type: 7},
+            Packet::Subscribe(data) => Header {flags: 2, remaining_length: data.encoded_length(), packet_type: 8},
+            Packet::Suback(data) => Header {flags: 0, remaining_length: data.encoded_length(), packet_type: 9},
+            Packet::Unsubscribe(data) => Header {flags: 2, remaining_length: data.encoded_length(), packet_type: 10},
+            Packet::Unsuback(data) => Header {flags: 0, remaining_length: data.encoded_length(), packet_type: 11},
+            Packet::Pingreq => Header {flags: 0, remaining_length: 0, packet_type: 12},
+            Packet::Pingresp => Header {flags: 0, remaining_length: 0, packet_type: 13},
+            Packet::Disconnect => Header {flags: 0, remaining_length: 0, packet_type: 14},
+        }
+    }
+}
+
 impl Decode for PacketIdentifier {
     type DecoderState=DecodingInfo;
     type DecodingError=DecodingError;
@@ -158,7 +179,36 @@ fn decode_remaining_length<R: Read>(reader: &mut R) -> Result<u32, DecodingError
     Ok(value)
 }
 
+impl Encode for Packet {
+
+    fn encode<W: Write>(&self, writer: &mut W) -> io::Result<()> {
+        let header = Header::for_packet(self);
+        match self {
+            Packet::Connect(data) => Packet::encode_with_header(writer, data, header),
+            Packet::Connack(data) => Packet::encode_with_header(writer, data, header),
+            Packet::Publish(data) => Packet::encode_with_header(writer, data, header),
+            Packet::Puback(data) => Packet::encode_with_header(writer, data, header),
+            Packet::Pubrec(data) => Packet::encode_with_header(writer, data, header),
+            Packet::Pubrel(data) => Packet::encode_with_header(writer, data, header),
+            Packet::Pubcomp(data) => Packet::encode_with_header(writer, data, header),
+            Packet::Subscribe(data) => Packet::encode_with_header(writer, data, header),
+            Packet::Suback(data) => Packet::encode_with_header(writer, data, header),
+            Packet::Unsubscribe(data) => Packet::encode_with_header(writer, data, header),
+            Packet::Unsuback(data) => Packet::encode_with_header(writer, data, header),
+            Packet::Pingreq => header.encode(writer),
+            Packet::Pingresp => header.encode(writer),
+            Packet::Disconnect => header.encode(writer),
+        }
+    }
+}
+
 impl Packet {
+
+    fn encode_with_header<W: Write, E: Encode>(writer: &mut W, encodable: &E, header: Header) -> io::Result<()> {
+        header.encode(writer)?;
+        encodable.encode(writer)
+    }
+
     fn decode_connect<R: Read>(reader: &mut R, state: &mut DecodingInfo) -> Result<Self, DecodingError> {
         let data = ConnectData::decode(reader, state)?;
         Ok(Packet::Connect(data))
@@ -207,15 +257,6 @@ impl Decode for Packet {
             13 => Ok(Packet::Pingresp),
             14 => Ok(Packet::Disconnect),
             _ => Err(DecodingError::Forbidden),
-        }
-    }
-}
-
-impl Encode for Packet {
-    fn encode<W: Write>(&self, writer: &mut W) -> io::Result<()> {
-        match self {
-
-            _ => Ok(())
         }
     }
 }

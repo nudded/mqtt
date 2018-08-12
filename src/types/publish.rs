@@ -46,5 +46,13 @@ impl Encode for PublishData {
         self.packet_identifier.encode(writer)?;
         self.message.encode(writer)
     }
-
+}
+impl PublishData {
+    pub fn flags(&self) -> u8 {
+        let mut flags = 0u8;
+        if self.dup { flags &= 0b0000_1000 };
+        if self.retain { flags &= 1 };
+        flags &= self.qos.encode() << 1;
+        flags
+    }
 }
